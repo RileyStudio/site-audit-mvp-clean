@@ -1,201 +1,100 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-function isProbablyUrl(input: string) {
-  const v = input.trim();
-  if (!v) return false;
-  // allow people to type without https://
-  try {
-    const u = new URL(v.startsWith("http") ? v : `https://${v}`);
-    return Boolean(u.hostname && u.hostname.includes("."));
-  } catch {
-    return false;
-  }
-}
-
-function normalizeUrl(input: string) {
-  const v = input.trim();
-  if (!v) return "";
-  return v.startsWith("http") ? v : `https://${v}`;
-}
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const router = useRouter();
 
-  const canRun = useMemo(() => isProbablyUrl(url), [url]);
-
-  async function runFreeAudit() {
-    setMsg(null);
-
-    if (!canRun) {
-      setMsg("Enter a valid website (example: example.com).");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizeUrl(url) }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setMsg(data?.error || "Couldn’t run the audit. Try again.");
-        return;
-      }
-
-      // Store for /report page to read (your report page already does this pattern)
-      sessionStorage.setItem("audit:last", JSON.stringify(data));
-
-      // Send them to the report view
-      window.location.href = "/report";
-    } catch {
-      setMsg("Network issue. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function buyFullReport() {
-    setMsg(null);
-    if (!canRun) {
-      setMsg("Enter a website first, then unlock the full report.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizeUrl(url) }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.url) {
-        setMsg(data?.error || "Checkout couldn’t start. Try again.");
-        return;
-      }
-
-      window.location.href = data.url; // Stripe Checkout URL
-    } catch {
-      setMsg("Network issue. Try again.");
-    } finally {
-      setLoading(false);
-    }
+  function handleRunAudit() {
+    if (!url.trim()) return;
+    sessionStorage.setItem("audit:url", url.trim());
+    router.push("/report");
   }
 
   return (
-    <main className="min-h-screen w-full px-6 py-10">
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/70">
-            <span className="font-semibold tracking-wide">MVP</span>
-            <span className="opacity-60">FAST WEBSITE PUNCH-LIST</span>
-          </div>
+    <main className="min-h-screen w-full bg-gradient-to-br from-black via-zinc-900 to-black flex justify-center px-6 py-20 text-white">
+      <div className="w-full max-w-6xl space-y-16">
 
-          <h1 className="mt-4 text-4xl font-semibold leading-tight text-white">
-            Paste a link. Get a clean audit report.
-          </h1>
-
-          <p className="mt-3 max-w-3xl text-white/70">
-            Checks the stuff that costs you leads: mobile experience, load speed,
-            basic SEO, and clarity. Plain-English results, not tech-speak.
+        {/* HERO */}
+        <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-10">
+          <p className="text-xs uppercase tracking-wide text-white/50">
+            MVP Fast Website Punch-List
           </p>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <h1 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight">
+            Paste a link.<br />Get a clean audit report.
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-white/70">
+            Checks the things that cost you leads: mobile experience, load speed,
+            basic SEO, and clarity. Plain-English results. No tech-speak.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-xl">
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="example.com"
-              className="h-12 w-full flex-1 rounded-2xl border border-white/10 bg-black/30 px-4 text-white outline-none placeholder:text-white/35 focus:border-white/25"
+              className="flex-1 rounded-2xl bg-black/40 border border-white/15 px-4 py-3 text-sm outline-none focus:border-white/40"
             />
             <button
-              onClick={runFreeAudit}
-              disabled={loading}
-              className="h-12 rounded-2xl border border-[#F5A84B]/40 bg-[#F5A84B]/10 px-5 font-medium text-[#F5A84B] hover:bg-[#F5A84B]/15 disabled:opacity-60"
+              onClick={handleRunAudit}
+              className="rounded-2xl bg-white text-black px-6 py-3 text-sm font-medium hover:bg-white/90"
             >
-              {loading ? "Working…" : "Run audit"}
+              Run audit
             </button>
           </div>
 
-          <p className="mt-3 text-sm text-white/55">
-            Tip: Start with your own site or a local business you know. If it’s useful,
-            people will pay for the full version.
+          <p className="mt-3 text-xs text-white/50">
+            Tip: Start with your own site or a local business you know.
           </p>
+        </section>
 
-          {msg ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75">
-              {msg}
-            </div>
-          ) : null}
-        </div>
+        {/* PRICING */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <div className="mb-2 inline-flex items-center gap-2 text-xs text-white/60">
-              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                WHAT YOU CAN BUY
-              </span>
-              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                PAID REPORT
-              </span>
-            </div>
+          {/* Instant Report */}
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8">
+            <h3 className="text-xl font-semibold">Instant Report</h3>
+            <p className="mt-1 text-white/60">$19 one-time</p>
 
-            <h2 className="text-lg font-semibold text-white">Instant Full Report ($19)</h2>
-            <p className="mt-2 text-sm text-white/65">
-              One-time purchase. Unlock the complete report for the URL you enter above.
+            <p className="mt-4 text-sm text-white/70">
+              Unlock the complete audit for the URL you enter above.
+              No calls. No subscriptions.
             </p>
 
             <button
-              onClick={buyFullReport}
-              disabled={loading}
-              className="mt-4 h-11 w-full rounded-2xl border border-white/10 bg-black/35 px-4 font-medium text-white hover:bg-black/45 disabled:opacity-60"
+              className="mt-6 rounded-2xl bg-white text-black px-5 py-2 text-sm font-medium hover:bg-white/90"
             >
-              {loading ? "Starting checkout…" : "Unlock full report"}
+              Unlock full report
             </button>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <div className="mb-2 inline-flex items-center gap-2 text-xs text-white/60">
-              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                UPGRADE
-              </span>
-              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                MONTHLY CHECKS
-              </span>
-            </div>
+          {/* Monitoring */}
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8 opacity-70">
+            <h3 className="text-xl font-semibold">Site Monitoring</h3>
+            <p className="mt-1 text-white/60">$49 / month</p>
 
-            <h2 className="text-lg font-semibold text-white">
-              Site Monitoring ($49/mo)
-              <span className="ml-2 rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-xs font-medium text-white/60">
-                Coming soon
-              </span>
-            </h2>
-
-            <p className="mt-2 text-sm text-white/65">
-              Weekly checks + emailed results. This will launch after the MVP is stable.
+            <p className="mt-4 text-sm text-white/70">
+              Weekly checks with emailed results.
+              Launching after the MVP stabilizes.
             </p>
 
-            <button
-              disabled
-              className="mt-4 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 font-medium text-white/40"
-            >
-              Not available yet
-            </button>
+            <span className="inline-block mt-6 text-xs text-white/50">
+              Coming soon
+            </span>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-10 text-center text-xs text-white/35">
-          © {new Date().getFullYear()} Riley Digital Studio
-        </div>
+        {/* FOOTER */}
+        <footer className="text-center text-xs text-white/40">
+          © 2026 Riley Digital Studio
+        </footer>
+
       </div>
     </main>
   );
 }
+

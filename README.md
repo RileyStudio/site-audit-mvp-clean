@@ -54,3 +54,14 @@ npm run dev
 ```
 
 (Alternative) You can copy `.env.local.example` to `.env.local` manually, but the script avoids Windows filename/extension problems.
+
+
+## Environment Variables
+
+Create a `.env.local` with:
+
+- `OPENAI_API_KEY`
+- `PAGESPEED_API_KEY` (recommended to avoid quota errors)
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `NEXT_PUBLIC_SITE_URL` (optional, for redirects)

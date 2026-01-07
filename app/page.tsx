@@ -1,127 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function Page() {
+export default function HomePage() {
   const [url, setUrl] = useState("");
   const router = useRouter();
 
-  const runAudit = () => {
-    if (!url.trim()) return;
-    sessionStorage.setItem("audit:url", url.trim());
+  const normalizedUrl = useMemo(() => url.trim(), [url]);
+
+  function runAudit() {
+    if (!normalizedUrl) return;
+    sessionStorage.setItem("audit:url", normalizedUrl);
     router.push("/report");
-  };
+  }
+
+  async function startCheckout() {
+    // Optional: keep url around so report can pick it up after checkout if needed
+    if (normalizedUrl) sessionStorage.setItem("audit:url", normalizedUrl);
+
+    const res = await fetch("/api/checkout", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data?.url) {
+      alert(data?.error || "Checkout failed. Please try again.");
+      return;
+    }
+
+    window.location.href = data.url;
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex items-center justify-center px-6">
-      <div className="w-full max-w-4xl space-y-20">
-
+    <main className="page">
+      <div className="container">
         {/* HERO */}
-        <section className="text-center space-y-6">
-          <p className="text-xs uppercase tracking-widest text-white/50">
-            MVP Fast Website Punch-List
+        <section className="hero">
+          <div className="kicker">
+            <span className="pill">MVP</span>
+            <span className="kickerText">FAST WEBSITE PUNCH-LIST</span>
+          </div>
+
+          <h1 className="h1">Paste a link. Get a clean audit report.</h1>
+
+          <p className="sub">
+            Checks what costs you leads: mobile experience, load speed, basic SEO,
+            and clarity. Plain-English results, not tech-speak.
           </p>
 
-          <h1 className="text-4xl md:text-5xl font-semibold leading-tight">
-            Paste a link.<br />
-            Get a clean audit report.
-          </h1>
-
-          <p className="mx-auto max-w-2xl text-white/70">
-            Checks what costs you leads: mobile experience, load speed,
-            basic SEO, and clarity. Plain-English results.
-          </p>
-
-          <div className="mx-auto mt-6 flex max-w-xl flex-col sm:flex-row gap-3">
+          <div className="bar">
             <input
+              className="input"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="example.com"
-              className="flex-1 rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-sm outline-none focus:border-white/40"
+              inputMode="url"
             />
-            <button
-              onClick={runAudit}
-              className="rounded-xl bg-white text-black px-6 py-3 text-sm font-medium hover:bg-white/90"
-            >
+            <button className="btn" onClick={runAudit} disabled={!normalizedUrl}>
               Run audit
             </button>
           </div>
 
-          <p className="text-xs text-white/40">
-            Tip: Start with your own site or a local business you know.
-          </p>
+          <p className="tip">Tip: Start with your own site or a local business you know.</p>
         </section>
 
         {/* PRICING */}
-        <section className="grid gap-6 md:grid-cols-2">
+        <section className="grid">
+          <div className="card">
+            <div className="cardTop">
+              <div className="tabs">
+                <span className="tab">WHAT YOU CAN SELL</span>
+                <span className="tab muted">PAID REPORT</span>
+              </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-left">
-            <h3 className="text-lg font-semibold">Instant Report</h3>
-            <p className="mt-1 text-white/60">$19 one-time</p>
+              <h2 className="title">Instant Report ($19)</h2>
+              <p className="small">
+                One-time purchase. Unlock the full report for the URL you enter above.
+              </p>
+            </div>
 
-            <p className="mt-4 text-sm text-white/70">
-              Unlock the full audit for the URL you enter.
-              No calls. No subscriptions.
-            </p>
-
-            <button className="mt-6 w-full rounded-xl bg-white text-black py-2 text-sm font-medium hover:bg-white/90">
-              Unlock full report
-            </button>
+            <div className="cardBottom">
+              <button className="btn outline" onClick={startCheckout}>
+                Unlock full report
+              </button>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 opacity-70">
-            <h3 className="text-lg font-semibold">Site Monitoring</h3>
-            <p className="mt-1 text-white/60">$49 / month</p>
+          <div className="card dim">
+            <div className="cardTop">
+              <div className="tabs">
+                <span className="tab">UPGRADE</span>
+                <span className="tab muted">MONTHLY CHECKS</span>
+              </div>
 
-            <p className="mt-4 text-sm text-white/70">
-              Weekly checks with emailed results.
-              Launching after MVP stabilization.
-            </p>
+              <h2 className="title">Site Monitoring ($49/mo)</h2>
+              <p className="small">
+                Run the audit weekly and email results. Easy recurring revenue once the MVP works.
+              </p>
+            </div>
 
-            <span className="mt-6 inline-block text-xs text-white/50">
-              Coming soon
-            </span>
+            <div className="cardBottom">
+              <span className="coming">Not enabled yet</span>
+            </div>
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer className="text-center text-xs text-white/40">
-          © 2026 Riley Digital Studio
-        </footer>
-
-      </div>
-    </main>
-  );
-}
-
-
-            <button className="mt-6 rounded-2xl bg-white text-black px-5 py-2 text-sm font-medium hover:bg-white/90">
-              Unlock full report
-            </button>
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8 opacity-70">
-            <h3 className="text-xl font-semibold">Site Monitoring</h3>
-            <p className="mt-1 text-white/60">$49 / month</p>
-
-            <p className="mt-4 text-sm text-white/70">
-              Weekly checks with emailed results.
-              Launching after MVP stabilization.
-            </p>
-
-            <span className="inline-block mt-6 text-xs text-white/50">
-              Coming soon
-            </span>
-          </div>
-
-        </section>
-
-        {/* FOOTER */}
-        <footer className="text-center text-xs text-white/40">
-          © 2026 Riley Digital Studio
-        </footer>
-
+        <footer className="footer">© {new Date().getFullYear()} Riley Digital Studio</footer>
       </div>
     </main>
   );
